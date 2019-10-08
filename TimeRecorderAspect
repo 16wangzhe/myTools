@@ -1,0 +1,49 @@
+package com.example.demo.aspect;
+
+import org.apache.commons.lang3.time.StopWatch;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Pointcut;
+import org.aspectj.lang.reflect.MethodSignature;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import java.lang.reflect.Method;
+
+@Aspect
+@Component
+public class TimeRecorderAspect {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TimeRecorderAspect.class);
+
+    @Pointcut("@annotation(timeRecorder)")
+    public void pointcut(TimeRecorder timeRecorder) {
+
+    }
+
+    @Around("pointcut(timeRecorder)")
+    public Object proceed(ProceedingJoinPoint proceedingJoinPoint, TimeRecorder timeRecorder) throws Throwable {
+        try {
+            // 创建一个计时器
+            StopWatch watch = new StopWatch();
+            // 计时器开始
+            watch.start();
+            Object obj = proceedingJoinPoint.proceed();
+            // 计时器停止
+            watch.stop();
+
+            // 获取计时器计时时间
+            Long time = watch.getTime();
+            System.out.println("----------------");
+            // 方法名称
+            MethodSignature methodSignature = (MethodSignature) proceedingJoinPoint.getSignature();
+            Object target = proceedingJoinPoint.getTarget();
+            Method currentMethod = target.getClass().getMethod(methodSignature.getName(), methodSignature.getParameterTypes());
+            LOGGER.info("desc:{} 方法:{}  参数：{} 执行耗时:{} ", timeRecorder.desc(), currentMethod, proceedingJoinPoint.getArgs(), time);
+            return obj;
+        } catch (Throwable throwable) {
+            throw throwable;
+        }
+    }
+}
